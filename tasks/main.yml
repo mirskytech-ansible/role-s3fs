@@ -1,0 +1,55 @@
+# file: roles/s3fs/tasks/main.yml
+---
+
+  - shell: grep '/mnt/s3' /proc/mounts
+    register: has_s3
+
+  - name: install prequisites
+    sudo: yes
+    apt: pkg="{{ item }}" state="present"
+    with_items:
+      - build-essential
+      - libfuse-dev
+      - fuse-utils
+      - libcurl4-openssl-dev
+      - libxml2-dev
+      - mime-support
+    when: has_s3 == ""
+      
+  - name: copy src
+    copy: "{{ item }}"
+    with_items:
+      - "src=../files/s3fs-1.74.tar.gz dest=/tmp owner={{ root_user }} group={{ root_user }} mode=0644"
+    when: has_s3 == ""
+      
+  - name: copy password
+    sudo: yes
+    copy: "{{ item }}"
+    with_items:
+      - "src=~/.ssh/passwd-s3fs  dest=/etc mode=400"
+    when: has_s3 == ""
+
+    
+  - name: extract
+    command: tar xzvf /tmp/s3fs-1.74.tar.gz chdir="/tmp"
+    when: has_s3 == ""
+
+  - name: configure & build
+    sudo: yes
+    command: "{{ item }} chdir='/tmp/s3fs-1.74'"
+    with_items:
+      -  ./configure --prefix=/usr
+      - make
+      - make install
+    when: has_s3 == ""  
+
+  - name: create mount point
+    sudo: yes
+    file: path=/mnt/s3 state=directory
+    when: has_s3 == ""
+    
+  - name: mount the bucket
+    sudo: yes
+    command: s3fs {{ bucket }} -o use_cache=/tmp -o allow_other /mnt/s3
+    when: has_s3 == ""
+    
