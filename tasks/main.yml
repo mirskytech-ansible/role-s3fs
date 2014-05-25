@@ -1,4 +1,4 @@
-# file: roles/s3fs/tasks/main.yml
+# file: s3fs/tasks/main.yml
 ---
 
   - shell: "s3fs"
@@ -41,7 +41,7 @@
 
   - name: create mount point
     sudo: yes
-    file: path=/mnt/{{ item.mount }} state=directory
+    file: path={{ item.mount }} state=directory
     when: has_s3|failed
     with_items: s3fs_mounts
     
