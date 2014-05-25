@@ -1,0 +1,5 @@
+---
+s3fs_version: 1.77
+# s3fs_aws_key: please_specify_in_playbook
+# s3fs_mounts:
+#  - { mount: s3, bucket: mirskysrvr_backup }

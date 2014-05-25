@@ -1,8 +1,9 @@
 # file: roles/s3fs/tasks/main.yml
 ---
 
-  - shell: grep '/mnt/s3' /proc/mounts
+  - shell: "s3fs"
     register: has_s3
+    ignore_errors: True
 
   - name: install prequisites
     sudo: yes
@@ -10,46 +11,43 @@
     with_items:
       - build-essential
       - libfuse-dev
-      - fuse-utils
       - libcurl4-openssl-dev
       - libxml2-dev
       - mime-support
-    when: has_s3 == ""
+      - unzip
+      - autoconf
+    when: has_s3|failed
       
-  - name: copy src
+  - name: copy src & password
     copy: "{{ item }}"
     with_items:
-      - "src=../files/s3fs-1.74.tar.gz dest=/tmp owner={{ root_user }} group={{ root_user }} mode=0644"
-    when: has_s3 == ""
-      
-  - name: copy password
-    sudo: yes
-    copy: "{{ item }}"
-    with_items:
-      - "src=~/.ssh/passwd-s3fs  dest=/etc mode=400"
-    when: has_s3 == ""
-
+      - src=../files/s3fs-{{ s3fs_version }}.zip dest=/tmp mode=0644
+      - src={{ s3fs_aws_key }}  dest=/etc mode=400
+    when: has_s3|failed
     
   - name: extract
-    command: tar xzvf /tmp/s3fs-1.74.tar.gz chdir="/tmp"
-    when: has_s3 == ""
+    command: chdir=/tmp unzip -qo /tmp/s3fs-{{ s3fs_version }}.zip
+    when: has_s3|failed
 
   - name: configure & build
     sudo: yes
-    command: "{{ item }} chdir='/tmp/s3fs-1.74'"
+    command: "{{ item }} chdir='/tmp/s3fs-fuse-master'"
     with_items:
-      -  ./configure --prefix=/usr
+      - autoreconf --install
+      - ./configure --prefix=/usr
       - make
       - make install
-    when: has_s3 == ""  
+    when: has_s3|failed
 
   - name: create mount point
     sudo: yes
-    file: path=/mnt/s3 state=directory
-    when: has_s3 == ""
+    file: path=/mnt/{{ item.mount }} state=directory
+    when: has_s3|failed
+    with_items: s3fs_mounts
     
   - name: mount the bucket
     sudo: yes
-    command: s3fs {{ bucket }} -o use_cache=/tmp -o allow_other /mnt/s3
-    when: has_s3 == ""
+    command: s3fs {{ item.bucket }} -o use_cache=/tmp -o allow_other /mnt/{{ item.mount }}
+    when: has_s3|failed
+    with_items: s3fs_mounts
     
