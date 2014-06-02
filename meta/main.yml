@@ -1,4 +1,4 @@
-# roles/postgres/meta/main.yml
+# roles/s3fs/meta/main.yml
 ---
 dependencies: []
 
