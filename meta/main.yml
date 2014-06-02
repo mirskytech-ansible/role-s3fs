@@ -1,0 +1,30 @@
+# roles/postgres/meta/main.yml
+---
+dependencies: []
+
+galaxy_info:
+  author: Andrew Mirsky
+  license: MIT
+  min_ansible_version: 1.5
+  platforms:
+    - name: GenericUNIX
+      versions:
+        - any
+
+  categories:
+    - cloud
+    #- cloud:ec2
+    #- cloud:gce
+    #- cloud:rax
+    #- clustering
+    #- database
+    #- database:nosql
+    #- database:sql
+    #- development
+    #- monitoring
+    #- networking
+    #- packaging
+    - system
+    #- web
+
+version: 0.1
