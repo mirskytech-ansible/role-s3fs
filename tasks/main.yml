@@ -1,13 +1,13 @@
 # file: s3fs/tasks/main.yml
 ---
 
-  - shell: "s3fs"
-    register: has_s3
+  - command: "which s3fs"
+    register: s3_exists
     ignore_errors: True
 
   - name: install prequisites
     sudo: yes
-    apt: pkg="{{ item }}" state="present"
+    apt: "pkg={{ item }} state=present"
     with_items:
       - build-essential
       - libfuse-dev
@@ -16,20 +16,21 @@
       - mime-support
       - unzip
       - autoconf
-    when: has_s3|failed
-      
-  - name: copy src & password
-    copy: "{{ item }}"
-    with_items:
-      - src=../files/s3fs-{{ s3fs_version }}.zip dest=/tmp mode=0644
-      - src={{ s3fs_aws_key }}  dest=/etc mode=400
-    when: has_s3|failed
-    
-  - name: extract
-    command: chdir=/tmp unzip -qo /tmp/s3fs-{{ s3fs_version }}.zip
-    when: has_s3|failed
+    when: s3_exists|failed
 
-  - name: configure & build
+  - name: "copy src & password"
+    copy: "src=../files/s3fs-{{ s3fs_version }}.zip dest=/tmp mode=0644"
+
+  - name: "copy src & password"
+    copy: "src={{ s3fs_aws_key }}  dest=/etc/passwd-s3fs mode=400"
+    sudo: yes
+    when: s3_exists|failed
+
+  - name: extract
+    command: "chdir=/tmp unzip -qo /tmp/s3fs-{{ s3fs_version }}.zip"
+    when: s3_exists|failed
+
+  - name: "configure & build"
     sudo: yes
     command: "{{ item }} chdir='/tmp/s3fs-fuse-master'"
     with_items:
@@ -37,17 +38,16 @@
       - ./configure --prefix=/usr
       - make
       - make install
-    when: has_s3|failed
+    when: s3_exists|failed
 
   - name: create mount point
     sudo: yes
-    file: path={{ item.mount }} state=directory
-    when: has_s3|failed
+    file: "path={{ item.mount }} state=directory"
+    when: s3_exists|failed
     with_items: s3fs_mounts
-    
+
   - name: mount the bucket
     sudo: yes
-    command: s3fs {{ item.bucket }} -o use_cache=/tmp -o allow_other /mnt/{{ item.mount }}
-    when: has_s3|failed
+    command: s3fs {{ item.bucket }} -o use_cache=/tmp -o allow_other {{ item.mount }}
+    when: s3_exists|failed
     with_items: s3fs_mounts
-    
