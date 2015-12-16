@@ -49,11 +49,9 @@
   - name: create mount point
     sudo: yes
     file: "path={{ item.mount }} state=directory"
-    when: s3_exists|failed
     with_items: s3fs_mounts
 
   - name: mount the bucket
     sudo: yes
     command: s3fs {{ item.bucket }} -o use_cache=/tmp -o allow_other {{ item.mount }}
-    when: s3_exists|failed
     with_items: s3fs_mounts
