@@ -37,7 +37,7 @@
       - make install
     when: s3_exists|failed
 
-  - name: create password file
+  - name: "create password file"
     sudo: yes
     file: path=/etc/passwd-s3fs state=touch mode=0400
 
@@ -46,12 +46,16 @@
     sudo: yes
     with_items: s3fs_mounts
 
-  - name: create mount point
+  - name: "create mount point"
     sudo: yes
     file: "path={{ item.mount }} state=directory"
     with_items: s3fs_mounts
 
-  - name: mount the bucket
+  - name: "mount the bucket"
     sudo: yes
     command: s3fs {{ item.bucket }} -o use_cache=/tmp -o allow_other {{ item.mount }}
+    with_items: s3fs_mounts
+
+  - name: "add the mount to /etc/fstab"
+    mount: name={{ item.mount }} src="s3fs#{{ item.bucket }}" fstype=fuse opts="_netdev,allow_other" state=present
     with_items: s3fs_mounts
